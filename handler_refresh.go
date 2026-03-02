@@ -59,7 +59,7 @@ func (cfg *apiConfig) revokeRefreshToken(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	revokedToken, err := cfg.db.RevokeRefreshToken(req.Context(), database.RevokeRefreshTokenParams{
+	_, err = cfg.db.RevokeRefreshToken(req.Context(), database.RevokeRefreshTokenParams{
 		RevokedAt: sql.NullTime{
 			Time:  time.Now(),
 			Valid: true,
@@ -70,11 +70,7 @@ func (cfg *apiConfig) revokeRefreshToken(w http.ResponseWriter, req *http.Reques
 		respondWithError(w, http.StatusUnauthorized, "Couldn't revoke token", err)
 		return
 	}
-	type returned struct {
-	}
 
-	fmt.Printf("Token: %v, Updated at: %v, Revoked at: %v\n", revokedToken.Token, revokedToken.UpdatedAt, revokedToken.RevokedAt)
-
-	respondWithJSON(w, http.StatusNoContent, returned{})
+	w.WriteHeader(http.StatusNoContent)
 
 }

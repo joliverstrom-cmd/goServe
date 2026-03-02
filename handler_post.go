@@ -92,3 +92,49 @@ func stripString(body string) string {
 
 	return strings.Join(words, " ")
 }
+
+func (cfg *apiConfig) deletePost(w http.ResponseWriter, req *http.Request) {
+
+	postID, err := uuid.Parse(req.PathValue("chirpID"))
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Invalid chirpID", err)
+		return
+	}
+
+	post, err := cfg.db.GetOneChirp(req.Context(), postID)
+	if err != nil {
+		respondWithError(w, http.StatusNotFound, "No chirp with that ID", err)
+		return
+	}
+
+	jwtString, err := auth.GetBearerToken(req.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "No auth info in header", err)
+		return
+	}
+
+	userID, err := auth.ValidateJWT(jwtString, cfg.jwtSecret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Invalid token", err)
+		return
+	}
+
+	if userID != post.UserID.UUID {
+		respondWithError(w, http.StatusForbidden, "Unauthorized access", err)
+		return
+	}
+
+	err = cfg.db.DeleteChirp(req.Context(), database.DeleteChirpParams{
+		ID: postID,
+		UserID: uuid.NullUUID{
+			UUID:  userID,
+			Valid: true,
+		}})
+	if err != nil {
+		respondWithError(w, http.StatusForbidden, "Unauthorized access", err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+
+}

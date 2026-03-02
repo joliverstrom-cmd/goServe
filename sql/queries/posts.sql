@@ -16,3 +16,7 @@ ORDER BY created_at ASC;
 -- name: GetOneChirp :one
 SELECT * FROM posts
 WHERE id = $1;
+
+-- name: DeleteChirp :exec
+DELETE from posts
+WHERE id = $1 AND user_id = $2;

@@ -17,6 +17,7 @@ type apiConfig struct {
 	db             *database.Queries
 	platform       string
 	jwtSecret      string
+	polkaSecret    string
 }
 
 func main() {
@@ -45,21 +46,34 @@ func main() {
 		log.Fatal("JWTSECRET must be set")
 	}
 
+	polkaSecret := os.Getenv("POLKA_KEY")
+	if polkaSecret == "" {
+		log.Fatal("POLKA_KEY must be set")
+	}
+
 	apiCfg := apiConfig{
 		fileserverHits: atomic.Int32{},
 		db:             dbQueries,
 		platform:       platform,
 		jwtSecret:      jwtSecret,
+		polkaSecret:    polkaSecret,
 	}
 
-	serveMux.HandleFunc("GET /api/healthz", readinessHandler)
 	serveMux.HandleFunc("POST /api/chirps", apiCfg.createPost)
+	serveMux.HandleFunc("GET /api/chirps", apiCfg.getPosts)
+	serveMux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.getPost)
+	serveMux.HandleFunc("DELETE /api/chirps/{chirpID}", apiCfg.deletePost)
+
 	serveMux.HandleFunc("POST /api/users", apiCfg.createUser)
+	serveMux.HandleFunc("PUT /api/users", apiCfg.updateUser)
+
 	serveMux.HandleFunc("POST /api/login", apiCfg.login)
 	serveMux.HandleFunc("POST /api/refresh", apiCfg.refreshCheck)
 	serveMux.HandleFunc("POST /api/revoke", apiCfg.revokeRefreshToken)
-	serveMux.HandleFunc("GET /api/chirps", apiCfg.getPosts)
-	serveMux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.getPost)
+
+	serveMux.HandleFunc("POST /api/polka/webhooks", apiCfg.setChirpyRedTrue)
+
+	serveMux.HandleFunc("GET /api/healthz", readinessHandler)
 
 	serveMux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(root))))
 
