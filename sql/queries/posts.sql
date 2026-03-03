@@ -20,3 +20,9 @@ WHERE id = $1;
 -- name: DeleteChirp :exec
 DELETE from posts
 WHERE id = $1 AND user_id = $2;
+
+-- name: GetChirpsByAuthorID :many
+SELECT * FROM posts
+WHERE user_id = $1
+ORDER BY created_at ASC;
+
